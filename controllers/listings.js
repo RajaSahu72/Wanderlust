@@ -3,9 +3,28 @@ const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
 const mapToken = process.env.MAP_TOKEN;
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
 
+// Escape regex special characters so user input like "(" or "*" can't break the query
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 module.exports.index = async (req, res) => {
-  const allListings = await Listing.find({});
-  res.render("listings/index.ejs", { allListings });
+  const q = (req.query.q || "").trim();
+  let filter = {};
+
+  if (q) {
+    const regex = new RegExp(escapeRegex(q), "i"); // case-insensitive partial match
+    filter = {
+      $or: [{ title: regex }, { location: regex }, { country: regex }],
+    };
+  }
+
+  const allListings = await Listing.find(filter);
+
+  if (q && allListings.length === 0) {
+    req.flash("error", `No listings found for "${q}"`);
+    return res.redirect("/listings");
+  }
+
+  res.render("listings/index.ejs", { allListings, q });
 };
 
 module.exports.renderNewForm = (req, res) => {
