@@ -74,8 +74,8 @@ const sessionOptions = {
   },
 };
 
- app.get("/", (req, res) => {
-   res.send("Working Well");
+app.get("/", (req, res) => {
+  res.send("Working Well");
 });
 
 app.use(session(sessionOptions));
